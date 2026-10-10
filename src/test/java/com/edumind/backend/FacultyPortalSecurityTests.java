@@ -2,7 +2,12 @@ package com.edumind.backend;
 
 import com.edumind.backend.dto.FacultyPortalCourseResponse;
 import com.edumind.backend.dto.FacultyPortalProfileResponse;
+import com.edumind.backend.dto.LearningMaterialResponse;
+import com.edumind.backend.dto.StudentPortalCourseResponse;
 import com.edumind.backend.service.FacultyPortalService;
+import com.edumind.backend.service.LearningMaterialService;
+import com.edumind.backend.service.StudentPortalService;
+import com.edumind.backend.service.AssignmentService;
 import com.edumind.backend.service.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +15,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.core.io.ByteArrayResource;
 
 import java.util.List;
+import java.time.Instant;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,6 +38,15 @@ class FacultyPortalSecurityTests {
 
     @MockitoBean
     private FacultyPortalService facultyPortalService;
+
+    @MockitoBean
+    private LearningMaterialService learningMaterialService;
+
+    @MockitoBean
+    private StudentPortalService studentPortalService;
+
+    @MockitoBean
+    private AssignmentService assignmentService;
 
     @Test
     void facultyCanOnlyRequestProfileForAuthenticatedUsername() throws Exception {
@@ -117,6 +133,154 @@ class FacultyPortalSecurityTests {
     @Test
     void anonymousRequestCannotAccessFacultyPortal() throws Exception {
         mockMvc.perform(get("/api/faculty/me"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousRequestCannotListLearningMaterials() throws Exception {
+        mockMvc.perform(get("/api/faculty/courses/31/materials"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentEndpointsUseAuthenticatedUsername() throws Exception {
+        when(studentPortalService.getProfile("student-alpha"))
+                .thenReturn(new com.edumind.backend.dto.StudentPortalProfileResponse(
+                        "student-alpha",
+                        "Student Alpha",
+                        "alpha@example.test",
+                        "ST-100",
+                        "Computer Science",
+                        "CSE",
+                        "B.Tech CSE",
+                        "BTECH-CSE",
+                        3,
+                        "2026-27"));
+
+        mockMvc.perform(get("/api/student/me")
+                        .param("username", "student-beta")
+                        .header("Authorization", bearerToken("student-alpha", "STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("student-alpha"))
+                .andExpect(jsonPath("$.rollNumber").value("ST-100"));
+
+        verify(studentPortalService).getProfile("student-alpha");
+    }
+
+    @Test
+    void studentCanRequestAuthorizedCoursesAsTheirOwnAccount() throws Exception {
+        when(studentPortalService.getCourses("student-alpha"))
+                .thenReturn(List.of(new StudentPortalCourseResponse(
+                        31L,
+                        "DS",
+                        "Data Structures",
+                        4,
+                        3,
+                        "B.Tech CSE",
+                        "2026-27",
+                        List.of("Faculty One"),
+                        2L)));
+
+        mockMvc.perform(get("/api/student/me/courses")
+                        .param("username", "student-beta")
+                        .header("Authorization", bearerToken("student-alpha", "STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").value("DS"))
+                .andExpect(jsonPath("$[0].learningMaterialCount").value(2));
+
+        verify(studentPortalService).getCourses("student-alpha");
+    }
+
+    @Test
+    void studentCanListCourseMaterialsAsTheirOwnAccount() throws Exception {
+        when(studentPortalService.getCourseMaterials("student-alpha", 31L))
+                .thenReturn(List.of(new LearningMaterialResponse(
+                        7L,
+                        31L,
+                        "lecture.pdf",
+                        "application/pdf",
+                        1024L,
+                        Instant.parse("2026-10-10T00:00:00Z"))));
+
+        mockMvc.perform(get("/api/student/courses/31/materials")
+                        .param("username", "student-beta")
+                        .header("Authorization", bearerToken("student-alpha", "STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].filename").value("lecture.pdf"))
+                .andExpect(jsonPath("$[0].size").value(1024));
+
+        verify(studentPortalService).getCourseMaterials("student-alpha", 31L);
+    }
+
+    @Test
+    void studentCanDownloadCourseMaterialUsingAuthenticatedIdentity() throws Exception {
+        LearningMaterialResponse metadata = new LearningMaterialResponse(
+                7L,
+                31L,
+                "lecture.pdf",
+                "application/pdf",
+                6L,
+                Instant.parse("2026-10-10T00:00:00Z"));
+        when(learningMaterialService.downloadForStudent("student-alpha", 7L))
+                .thenReturn(new LearningMaterialService.Download(
+                        metadata, new ByteArrayResource(new byte[] {1, 2, 3, 4, 5, 6})));
+
+        mockMvc.perform(get("/api/student/materials/7/download")
+                        .param("username", "student-beta")
+                        .header("Authorization", bearerToken("student-alpha", "STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Content-Disposition", org.hamcrest.Matchers.containsString(
+                                "lecture.pdf")));
+
+        verify(learningMaterialService).downloadForStudent("student-alpha", 7L);
+    }
+
+    @Test
+    void anonymousRequestCannotAccessStudentPortal() throws Exception {
+        mockMvc.perform(get("/api/student/me"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousRequestCannotDownloadStudentMaterials() throws Exception {
+        mockMvc.perform(get("/api/student/materials/7/download"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousRequestsCannotAccessAssignmentApis() throws Exception {
+        mockMvc.perform(get("/api/faculty/courses/31/assignments"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/student/assignments"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentCannotAccessFacultyAssignmentApis() throws Exception {
+        mockMvc.perform(get("/api/faculty/courses/31/assignments")
+                        .header("Authorization", bearerToken("student-alpha", "STUDENT")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void facultyCannotAccessStudentPortal() throws Exception {
+        mockMvc.perform(get("/api/student/me")
+                        .header("Authorization", facultyToken("faculty-alpha")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminCannotAccessStudentPortal() throws Exception {
+        mockMvc.perform(get("/api/student/me")
+                        .header("Authorization", bearerToken("admin", "ADMIN")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminCannotAccessFacultyLearningMaterials() throws Exception {
+        mockMvc.perform(get("/api/faculty/courses/31/materials")
+                        .header("Authorization", bearerToken("admin", "ADMIN")))
                 .andExpect(status().isForbidden());
     }
 

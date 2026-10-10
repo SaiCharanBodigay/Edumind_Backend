@@ -61,6 +61,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/faculty/**")
                         .hasRole("FACULTY")
 
+                        // Student portal endpoints are restricted to STUDENT accounts
+                        .requestMatchers("/api/student/**")
+                        .hasRole("STUDENT")
+
                         // Other API endpoints require authentication
                         .anyRequest()
                         .authenticated()

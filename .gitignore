@@ -41,6 +41,10 @@ replay_pid*.log
 .env.*
 !.env.example
 
+# Uploaded learning materials
+/data/learning-materials/
+/data/assignment-submissions/
+
 # Local test data (uncomment if files contain sensitive data)
 # faculty-test.csv
 # faculty-test.xlsx

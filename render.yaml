@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: edumind-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: APP_CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: EDUMIND_STORAGE_DIR
+        value: /data/learning-materials
+      - key: EDUMIND_ASSIGNMENT_STORAGE_DIR
+        value: /data/assignment-submissions
+      - key: EDUMIND_SEED_ADMIN_ENABLED
+        value: false
+      - key: EDUMIND_ADMIN_USERNAME
+        value: admin
+    healthCheckPath: /actuator/health
+    autoDeploy: false
