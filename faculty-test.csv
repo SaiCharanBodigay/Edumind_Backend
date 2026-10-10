@@ -1,0 +1,3 @@
+username,password,fullName,email,employeeId,designation,departmentId
+csvfaculty001,Faculty@123,Dr. Anil Kumar,anil@edumind.com,FAC002,Assistant Professor,1
+csvfaculty002,Faculty@123,Dr. Priya Sharma,priya@edumind.com,FAC003,Associate Professor,1

@@ -1,0 +1,3 @@
+username,password,fullName,email,rollNumber,departmentId,programId,semesterId
+csvstudent001,Student@123,CSV Student One,csvstudent001@edumind.com,CSV001,1,1,1
+csvstudent002,Student@123,CSV Student Two,csvstudent002@edumind.com,CSV002,1,1,1
