@@ -19,6 +19,11 @@ public class StudentResponse {
 
     private Long semesterId;
     private Integer semesterNumber;
+    private String academicYear;
+    private Long cohortId;
+    private String cohortName;
+    private Long sectionId;
+    private String sectionName;
 
     public StudentResponse() {
     }
@@ -36,7 +41,12 @@ public class StudentResponse {
             String programName,
             String programCode,
             Long semesterId,
-            Integer semesterNumber) {
+            Integer semesterNumber,
+            String academicYear,
+            Long cohortId,
+            String cohortName,
+            Long sectionId,
+            String sectionName) {
 
         this.id = id;
         this.rollNumber = rollNumber;
@@ -54,6 +64,11 @@ public class StudentResponse {
 
         this.semesterId = semesterId;
         this.semesterNumber = semesterNumber;
+        this.academicYear = academicYear;
+        this.cohortId = cohortId;
+        this.cohortName = cohortName;
+        this.sectionId = sectionId;
+        this.sectionName = sectionName;
     }
 
     public Long getId() {
@@ -106,5 +121,25 @@ public class StudentResponse {
 
     public Integer getSemesterNumber() {
         return semesterNumber;
+    }
+
+    public String getAcademicYear() {
+        return academicYear;
+    }
+
+    public Long getCohortId() {
+        return cohortId;
+    }
+
+    public String getCohortName() {
+        return cohortName;
+    }
+
+    public Long getSectionId() {
+        return sectionId;
+    }
+
+    public String getSectionName() {
+        return sectionName;
     }
 }

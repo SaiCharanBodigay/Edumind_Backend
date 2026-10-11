@@ -61,6 +61,9 @@ public class StudentExcelImportService {
                             Long.parseLong(
                                     getCellValue(row.getCell(7)));
 
+                    Long cohortId = parseOptionalId(row.getCell(8));
+                    Long sectionId = parseOptionalId(row.getCell(9));
+
                     studentService.createStudent(
                             username,
                             password,
@@ -69,7 +72,9 @@ public class StudentExcelImportService {
                             rollNumber,
                             departmentId,
                             programId,
-                            semesterId
+                            semesterId,
+                            cohortId,
+                            sectionId
                     );
 
                     successfulRows++;
@@ -112,7 +117,7 @@ public class StudentExcelImportService {
 
     private boolean isRowEmpty(Row row) {
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 10; i++) {
 
             Cell cell = row.getCell(i);
 
@@ -124,5 +129,10 @@ public class StudentExcelImportService {
         }
 
         return true;
+    }
+
+    private Long parseOptionalId(Cell cell) {
+        String value = getCellValue(cell);
+        return value.isBlank() ? null : Long.parseLong(value);
     }
 }

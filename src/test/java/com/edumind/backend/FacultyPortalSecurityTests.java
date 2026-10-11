@@ -4,11 +4,16 @@ import com.edumind.backend.dto.FacultyPortalCourseResponse;
 import com.edumind.backend.dto.FacultyPortalProfileResponse;
 import com.edumind.backend.dto.LearningMaterialResponse;
 import com.edumind.backend.dto.StudentPortalCourseResponse;
+import com.edumind.backend.dto.StudentQuizOptionResponse;
+import com.edumind.backend.dto.StudentQuizQuestionResponse;
+import com.edumind.backend.dto.StudentQuizResponse;
 import com.edumind.backend.service.FacultyPortalService;
 import com.edumind.backend.service.LearningMaterialService;
 import com.edumind.backend.service.StudentPortalService;
 import com.edumind.backend.service.AssignmentService;
+import com.edumind.backend.service.ClassInchargeService;
 import com.edumind.backend.service.JwtService;
+import com.edumind.backend.service.QuizService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,6 +52,12 @@ class FacultyPortalSecurityTests {
 
     @MockitoBean
     private AssignmentService assignmentService;
+
+    @MockitoBean
+    private ClassInchargeService classInchargeService;
+
+    @MockitoBean
+    private QuizService quizService;
 
     @Test
     void facultyCanOnlyRequestProfileForAuthenticatedUsername() throws Exception {
@@ -146,6 +157,30 @@ class FacultyPortalSecurityTests {
     @Test
     void anonymousRequestCannotListLearningMaterials() throws Exception {
         mockMvc.perform(get("/api/faculty/courses/31/materials"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void facultySectionRosterUsesAuthenticatedFacultyIdentity() throws Exception {
+        when(classInchargeService.getMySectionStudents(
+                "faculty-alpha", 77L, null, 0, 25))
+                .thenReturn(new com.edumind.backend.dto.StudentSearchResponse(
+                        List.of(), 0, 25, 0, 0));
+
+        mockMvc.perform(get("/api/faculty/me/sections/77/students")
+                        .param("username", "faculty-beta")
+                        .header("Authorization", facultyToken("faculty-alpha")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+
+        verify(classInchargeService).getMySectionStudents(
+                "faculty-alpha", 77L, null, 0, 25);
+    }
+
+    @Test
+    void studentCannotAccessFacultyClassRoster() throws Exception {
+        mockMvc.perform(get("/api/faculty/me/sections/77/students")
+                        .header("Authorization", bearerToken("student-alpha", "STUDENT")))
                 .andExpect(status().isForbidden());
     }
 
@@ -260,6 +295,49 @@ class FacultyPortalSecurityTests {
         mockMvc.perform(get("/api/faculty/courses/31/assignments"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/student/assignments"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousRequestsCannotAccessQuizApis() throws Exception {
+        mockMvc.perform(get("/api/faculty/courses/31/quizzes"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/student/quizzes"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentQuizApiUsesAuthenticatedIdentityAndOmitsAnswerKeys() throws Exception {
+        when(quizService.listForStudent("student-alpha"))
+                .thenReturn(List.of(new StudentQuizResponse(
+                        4L, 31L, "DS", "Data Structures", "Quiz 1", null, null,
+                        null, null, null, 1, java.math.BigDecimal.TEN,
+                        "AVAILABLE", 0, null, false, List.of(),
+                        List.of(new StudentQuizQuestionResponse(
+                                9L, "Which structure is FIFO?", java.math.BigDecimal.ONE, 0,
+                                List.of(new StudentQuizOptionResponse(21L, "Queue")))))));
+
+        mockMvc.perform(get("/api/student/quizzes")
+                        .param("username", "student-beta")
+                        .header("Authorization", bearerToken("student-alpha", "STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].questions[0].options[0].text").value("Queue"))
+                .andExpect(jsonPath("$[0].questions[0].options[0].correct").doesNotExist());
+
+        verify(quizService).listForStudent("student-alpha");
+    }
+
+    @Test
+    void studentCannotAccessFacultyQuizManagement() throws Exception {
+        mockMvc.perform(get("/api/faculty/courses/31/quizzes")
+                        .header("Authorization", bearerToken("student-alpha", "STUDENT")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void facultyCannotAccessStudentQuizzes() throws Exception {
+        mockMvc.perform(get("/api/student/quizzes")
+                        .header("Authorization", facultyToken("faculty-alpha")))
                 .andExpect(status().isForbidden());
     }
 

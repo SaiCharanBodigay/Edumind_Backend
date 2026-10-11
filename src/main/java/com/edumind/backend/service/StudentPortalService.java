@@ -52,7 +52,9 @@ public class StudentPortalService {
                 student.getProgram().getName(),
                 student.getProgram().getCode(),
                 semester.getSemesterNumber(),
-                semester.getAcademicYear().getName());
+                semester.getAcademicYear().getName(),
+                student.getCohort() == null ? null : student.getCohort().getName(),
+                student.getSection() == null ? null : student.getSection().getName());
     }
 
     @Transactional(readOnly = true)

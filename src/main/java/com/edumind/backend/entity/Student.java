@@ -3,7 +3,12 @@ package com.edumind.backend.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "students")
+@Table(
+        name = "students",
+        indexes = {
+                @Index(name = "idx_student_program_semester", columnList = "program_id,semester_id"),
+                @Index(name = "idx_student_cohort_section", columnList = "cohort_id,section_id")
+        })
 public class Student {
 
     @Id
@@ -28,6 +33,14 @@ public class Student {
     @ManyToOne
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cohort_id")
+    private AcademicCohort cohort;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id")
+    private Section section;
 
     public Student() {
     }
@@ -83,5 +96,21 @@ public class Student {
 
     public void setSemester(Semester semester) {
         this.semester = semester;
+    }
+
+    public AcademicCohort getCohort() {
+        return cohort;
+    }
+
+    public void setCohort(AcademicCohort cohort) {
+        this.cohort = cohort;
+    }
+
+    public Section getSection() {
+        return section;
+    }
+
+    public void setSection(Section section) {
+        this.section = section;
     }
 }

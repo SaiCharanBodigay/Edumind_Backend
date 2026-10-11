@@ -5,6 +5,7 @@ import com.edumind.backend.entity.Faculty;
 import com.edumind.backend.entity.User;
 import com.edumind.backend.repository.DepartmentRepository;
 import com.edumind.backend.repository.FacultyCourseAllocationRepository;
+import com.edumind.backend.repository.ClassInchargeAssignmentRepository;
 import com.edumind.backend.repository.FacultyRepository;
 import com.edumind.backend.repository.UserRepository;
 
@@ -22,19 +23,22 @@ public class FacultyService {
     private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final FacultyCourseAllocationRepository allocationRepository;
+    private final ClassInchargeAssignmentRepository inchargeRepository;
 
     public FacultyService(
             FacultyRepository facultyRepository,
             UserRepository userRepository,
             DepartmentRepository departmentRepository,
             PasswordEncoder passwordEncoder,
-            FacultyCourseAllocationRepository allocationRepository) {
+            FacultyCourseAllocationRepository allocationRepository,
+            ClassInchargeAssignmentRepository inchargeRepository) {
 
         this.facultyRepository = facultyRepository;
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.allocationRepository = allocationRepository;
+        this.inchargeRepository = inchargeRepository;
     }
 
     public List<Faculty> getAllFaculty() {
@@ -156,6 +160,10 @@ public class FacultyService {
         if (allocationRepository.existsByFacultyId(id)) {
             throw new RuntimeException(
                     "Cannot delete faculty because they are assigned to one or more courses");
+        }
+        if (inchargeRepository.existsByFacultyId(id)) {
+            throw new RuntimeException(
+                    "Cannot delete faculty because they have current or historical class-incharge assignments");
         }
 
         User user = faculty.getUser();

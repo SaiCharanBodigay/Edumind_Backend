@@ -28,6 +28,12 @@ public class StudentUpdateRequest {
     @NotNull(message = "Semester ID is required")
     private Long semesterId;
 
+    @NotNull(message = "Academic cohort is required")
+    private Long cohortId;
+
+    @NotNull(message = "Section is required")
+    private Long sectionId;
+
     public String getFullName() {
         return fullName;
     }
@@ -74,5 +80,21 @@ public class StudentUpdateRequest {
 
     public void setSemesterId(Long semesterId) {
         this.semesterId = semesterId;
+    }
+
+    public Long getCohortId() {
+        return cohortId;
+    }
+
+    public void setCohortId(Long cohortId) {
+        this.cohortId = cohortId;
+    }
+
+    public Long getSectionId() {
+        return sectionId;
+    }
+
+    public void setSectionId(Long sectionId) {
+        this.sectionId = sectionId;
     }
 }

@@ -4,6 +4,7 @@ import com.edumind.backend.dto.FacultyRequest;
 import com.edumind.backend.dto.FacultyResponse;
 import com.edumind.backend.dto.FacultyUpdateRequest;
 import com.edumind.backend.entity.Faculty;
+import com.edumind.backend.repository.ClassInchargeAssignmentRepository;
 import com.edumind.backend.service.FacultyService;
 
 import jakarta.validation.Valid;
@@ -13,24 +14,41 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/faculty")
 public class FacultyController {
 
     private final FacultyService facultyService;
+    private final ClassInchargeAssignmentRepository inchargeRepository;
 
-    public FacultyController(FacultyService facultyService) {
+    public FacultyController(
+            FacultyService facultyService,
+            ClassInchargeAssignmentRepository inchargeRepository) {
         this.facultyService = facultyService;
+        this.inchargeRepository = inchargeRepository;
     }
 
     @GetMapping
     public ResponseEntity<List<FacultyResponse>> getAllFaculty() {
 
+        Map<Long, List<String>> activeSections = inchargeRepository.findAllActive().stream()
+                .collect(Collectors.groupingBy(
+                        assignment -> assignment.getFaculty().getId(),
+                        Collectors.mapping(
+                                assignment -> assignment.getSection().getName()
+                                        + " · " + assignment.getSection().getCohort().getName()
+                                        + " · Semester "
+                                        + assignment.getSection().getSemester().getSemesterNumber(),
+                                Collectors.toList())));
         List<FacultyResponse> response =
                 facultyService.getAllFaculty()
                         .stream()
-                        .map(this::toResponse)
+                        .map(faculty -> toResponse(
+                                faculty,
+                                activeSections.getOrDefault(faculty.getId(), List.of())))
                         .toList();
 
         return ResponseEntity.ok(response);
@@ -42,7 +60,7 @@ public class FacultyController {
 
         Faculty faculty = facultyService.getFacultyById(id);
 
-        return ResponseEntity.ok(toResponse(faculty));
+        return ResponseEntity.ok(toResponse(faculty, getActiveSections(faculty.getId())));
     }
 
     @PostMapping
@@ -61,7 +79,7 @@ public class FacultyController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(toResponse(faculty));
+                .body(toResponse(faculty, getActiveSections(faculty.getId())));
     }
 
     @PutMapping("/{id}")
@@ -78,7 +96,7 @@ public class FacultyController {
                 request.getDepartmentId()
         );
 
-        return ResponseEntity.ok(toResponse(faculty));
+        return ResponseEntity.ok(toResponse(faculty, getActiveSections(faculty.getId())));
     }
 
     @DeleteMapping("/{id}")
@@ -90,7 +108,16 @@ public class FacultyController {
         return ResponseEntity.noContent().build();
     }
 
-    private FacultyResponse toResponse(Faculty faculty) {
+    private List<String> getActiveSections(Long facultyId) {
+        return inchargeRepository.findAllByFacultyIdAndActiveTrue(facultyId).stream()
+                .map(assignment -> assignment.getSection().getName()
+                        + " · " + assignment.getSection().getCohort().getName()
+                        + " · Semester "
+                        + assignment.getSection().getSemester().getSemesterNumber())
+                .toList();
+    }
+
+    private FacultyResponse toResponse(Faculty faculty, List<String> activeSections) {
 
         return new FacultyResponse(
                 faculty.getId(),
@@ -103,7 +130,8 @@ public class FacultyController {
 
                 faculty.getDepartment().getId(),
                 faculty.getDepartment().getName(),
-                faculty.getDepartment().getCode()
+                faculty.getDepartment().getCode(),
+                activeSections
         );
     }
 }

@@ -1,5 +1,7 @@
 package com.edumind.backend.dto;
 
+import java.util.List;
+
 public class FacultyResponse {
 
     private Long id;
@@ -13,6 +15,7 @@ public class FacultyResponse {
     private Long departmentId;
     private String departmentName;
     private String departmentCode;
+    private List<String> activeClassInchargeSections;
 
     public FacultyResponse() {
     }
@@ -26,7 +29,8 @@ public class FacultyResponse {
             String email,
             Long departmentId,
             String departmentName,
-            String departmentCode
+            String departmentCode,
+            List<String> activeClassInchargeSections
     ) {
         this.id = id;
         this.employeeId = employeeId;
@@ -37,6 +41,7 @@ public class FacultyResponse {
         this.departmentId = departmentId;
         this.departmentName = departmentName;
         this.departmentCode = departmentCode;
+        this.activeClassInchargeSections = List.copyOf(activeClassInchargeSections);
     }
 
     public Long getId() {
@@ -73,5 +78,9 @@ public class FacultyResponse {
 
     public String getDepartmentCode() {
         return departmentCode;
+    }
+
+    public List<String> getActiveClassInchargeSections() {
+        return activeClassInchargeSections;
     }
 }
