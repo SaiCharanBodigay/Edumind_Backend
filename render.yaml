@@ -24,7 +24,7 @@ services:
       - key: EDUMIND_ASSIGNMENT_STORAGE_DIR
         value: /data/assignment-submissions
       - key: EDUMIND_SEED_ADMIN_ENABLED
-        value: false
+        value: true
       - key: EDUMIND_ADMIN_USERNAME
         value: admin
       - key: EDUMIND_ADMIN_PASSWORD
