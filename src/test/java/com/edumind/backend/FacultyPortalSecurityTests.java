@@ -131,6 +131,13 @@ class FacultyPortalSecurityTests {
     }
 
     @Test
+    void healthEndpointIsPublicForHostingHealthChecks() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
     void anonymousRequestCannotAccessFacultyPortal() throws Exception {
         mockMvc.perform(get("/api/faculty/me"))
                 .andExpect(status().isForbidden());
